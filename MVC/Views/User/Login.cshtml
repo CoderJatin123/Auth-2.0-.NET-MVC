@@ -1,0 +1,124 @@
+﻿<script src="~/lib/jquery/dist/jquery.min.js"></script>
+
+<div class="container d-flex flex-column" style="width: 30%;">
+    <h1 class="text-center">Login</h1>
+    <form id="loginForm" enctype="multipart/form-data">
+        <div  id="messageContainer" class="alert mt-1">
+        </div>
+        <div class="my-3">
+            <label for="" class="form-label">User Name</label>
+            <input type="text" class="form-control" name="email" id="email" />
+            <small id="emailHelper" class="form-text text-muted"></small>
+        </div>
+
+        <div class="mb-3">
+            <label for="" class="form-label">Password</label>
+            <input type="password" class="form-control" name="password" id="password" />
+        </div>
+
+        <button id="login" class="btn btn-info w-100 py-2 text-white fw-bold tracking-wide" type="submit">Login</button>
+    </form>
+    <p class="my-2 small text-center opacity-75">Don't have account ?</p>
+    <a asp-action="Register" asp-controller="User" id="signup"
+       class="my btn btn-outline-info w-100 py-2 fw-bold tracking-wide" type="button">Create New Account</a>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
+
+<script>
+
+    $("#email").change(function () {
+        $("#messageContainer").hide();
+    });
+
+    $("#password").change(function () {
+        $("#messageContainer").hide();
+    })
+
+    $(document).ready(function () {
+
+        $("#messageContainer").hide();
+
+        $("#loginForm").submit(function () {
+            return false;
+        })
+
+        $("#loginForm").validate({
+            rules: {
+                email: {
+                    required: true,
+                },
+                password: {
+                    required: true,
+                    minlength: 6
+                }
+            },
+            messages: {
+                email: {
+                    required: "Email is required field."
+                },
+                password: {
+                    required: "Password is required field.",
+                    minlength: "Minimun password length should be 6"
+                }
+            },
+            errorPlacement: function (error, element) {
+                error.addClass("text-danger small");
+                error.insertAfter(element.closest("input"));
+
+            },
+            submitHandler: function (form) {
+                login();
+            }
+        })
+    });
+
+    function login() {
+        
+        var data = new FormData();
+        data.append("Username", $("#email").val());
+        data.append("Password", $("#password").val());
+
+        $.ajax({
+            url: "http://localhost:5174/api/AuthApi/token",
+            method: "POST",
+            data: data,
+            contentType: false,
+            processData: false,
+            success: function (responce, status, xhr) {
+
+                sessionStorage.setItem("accessToken",JSON.stringify(responce.accessToken));
+                sessionStorage.setItem("refreshToken",JSON.stringify(responce.refreshToken));
+                
+                showMessage(true,"Login successful")
+
+            }, error: function (xhr, staus, error) {
+     
+                console.log(xhr)
+                showMessage(false, "Incorrect password")
+            }
+        });
+    }
+
+    function showMessage(result, message) {
+        $("#messageContainer").text(message);
+
+        if (result == true) {
+            $("#messageContainer").text(message);
+            $("#messageContainer").removeClass("alert-danger");
+            $("#messageContainer").addClass("alert-success");
+
+            setTimeout(()=>{
+                window.location="../../Home/Protected";
+            },2000);
+
+        }
+        else {
+            $("#messageContainer").removeClass("alert-success");
+            $("#messageContainer").addClass("alert-danger");
+        }
+        $("#messageContainer").show();
+    }
+</script>

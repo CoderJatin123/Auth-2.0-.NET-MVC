@@ -1,0 +1,63 @@
+﻿<script src="~/lib/jquery/dist/jquery.min.js"></script>
+<div class="text-center">
+    <p class="fs-1 opacity-75">This is protected page</p>
+    <p id="user" class="fs-2">Loading</p>
+</div>
+<script>
+        var accessToken  = sessionStorage.getItem("accessToken")
+        var refreshToken = sessionStorage.getItem("refreshToken")
+    
+    $(document).ready(function (){
+
+        if (accessToken!=null && refreshToken!=null){
+            loadData(JSON.parse(accessToken))
+            updateAccessToken()
+        }
+    })
+    
+    function loadData(accessToken){
+        
+        $.ajax({
+            url:"http://localhost:5174/api/Protected",
+            message:"POST",
+            headers :{
+                'Authorization':'Bearer '+accessToken
+            },
+            success: function (response){
+                
+                //console.log(response)
+                //updateAccessToken()
+                $('#user').text("User : "+response.user)
+                
+            },error : function (error,xhr,status){
+                console.log(xhr)
+                $('#user').text("Unauthorized ")
+            }
+        })
+       
+    }
+    function updateAccessToken(){
+            
+        refreshToken = JSON.parse(refreshToken);
+        
+        let data = new FormData();
+        data.append("RefreshToken",refreshToken)
+        
+        $.ajax({
+            url:"http://localhost:5174/api/AuthApi/refresh",
+            method:"POST",
+            data: data,
+            contentType: false,
+            processData: false,
+            success: function (response){
+                sessionStorage.setItem("accessToken",JSON.stringify(response.accessToken));
+                sessionStorage.setItem("refreshToken",JSON.stringify(response.refreshToken));
+
+            },error : function (error,xhr,status){
+                console.log(xhr)
+                $('#user').text("Unauthorized Refresh token expired try to login plz")
+            }
+        });
+    }
+
+</script>
