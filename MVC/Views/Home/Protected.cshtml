@@ -1,43 +1,78 @@
 ﻿<script src="~/lib/jquery/dist/jquery.min.js"></script>
-<div class="text-center">
-    <p class="fs-1 opacity-75">This is protected page</p>
-    <p id="user" class="fs-2">Loading</p>
+
+<div class="d-flex">
+    
+    <div class="container d-flex flex-column" style="width: 30%;">
+        <h1 class="text-center">Auth 2.0</h1>
+        <form id="loginForm" enctype="multipart/form-data">
+            <div  id="messageContainer" class="alert mt-1">
+            </div>
+            <div class="my-2">
+                <label for="" class="form-label">User Name</label>
+                <input type="text" class="form-control" name="email" id="email" />
+                <small id="emailHelper" class="form-text text-muted"></small>
+            </div>
+
+            <div class="mb-3">
+                <label for="" class="form-label">Password</label>
+                <input type="password" class="form-control" name="password" id="password" />
+            </div>
+
+            <button id="login" class="btn btn-info w-100 py-2 text-white fw-bold tracking-wide" type="submit">Login</button>
+        </form>
+        <button  onclick="loadData()"   class="my-3 btn btn-outline-info w-100 py-2 fw-bold tracking-wide" type="button">Fetch Data</button>
+        <button onclick="updateAccessToken()"   class="    btn btn-outline-info w-100 py-2 fw-bold tracking-wide" type="button">Get new refresh token</button>
+        </div>
+    <div class="pt-4">
+        <table id="mt">
+            <thead>
+            <h4 class="fs-5">Logs :</h4>
+            </thead>
+            <tbody></tbody>
+        </table>
+    </div>
 </div>
+
+@section Scripts
+{
+    <partial name="_ValidationScriptsPartial"/>
+}
 <script>
+    
         var accessToken  = sessionStorage.getItem("accessToken")
         var refreshToken = sessionStorage.getItem("refreshToken")
     
     $(document).ready(function (){
 
+        init()
         if (accessToken!=null && refreshToken!=null){
-            
-            loadData(JSON.parse(accessToken))
-            updateAccessToken()
+           
+        }else {
+            logMessage("Unauthorized User");
         }
     })
     
-    function loadData(accessToken){
-        
+    function loadData(){
+        accessToken  = sessionStorage.getItem("accessToken")
+        console.log(accessToken)
         $.ajax({
             url:"http://localhost:5174/api/Protected",
             method:"GET",
             headers :{
-                'Authorization':'Bearer '+accessToken
+                'Authorization':'Bearer '+JSON.parse(accessToken)
             },
             success: function (response){
-                
-                //console.log(response)
-                //updateAccessToken()
-                $('#user').text("User : "+response.user)
-                
+                logMessage("✅ Read successful")
+                logMessage("User : "+response.user)
             },error : function (error,xhr,status){
-                console.log(xhr)
-                $('#user').text("Unauthorized ")
+                logMessage("ℹ️ Access token expired.")
             }
         })
-       
     }
+    
     function updateAccessToken(){
+
+        logMessage("Trying to generate new access token")
         
         let data = new FormData();
         data.append("RefreshToken",JSON.parse(refreshToken))
@@ -49,14 +84,86 @@
             contentType: false,
             processData: false,
             success: function (response){
+
+                logMessage("✅ New Access token & Refresh token generated")
+                
+                console.log("ACC",response.accessToken)
+                
                 sessionStorage.setItem("accessToken",JSON.stringify(response.accessToken));
                 sessionStorage.setItem("refreshToken",JSON.stringify(response.refreshToken));
 
             },error : function (error,xhr,status){
-                console.log(xhr)
-                $('#user').text("Unauthorized Refresh token expired try to login plz")
+                logMessage("❌ Refresh token expired try to login")
+                //$('#user').text("Unauthorized Refresh token expired try to login plz")
             }
         });
     }
+
+        function login() {
+
+            var data = new FormData();
+            data.append("Username", $("#email").val());
+            data.append("Password", $("#password").val());
+
+            $.ajax({
+                url: "http://localhost:5174/api/AuthApi/token",
+                method: "POST",
+                data: data,
+                contentType: false,
+                processData: false,
+                success: function (responce, status, xhr) {
+                    
+                    logMessage("✅ Login successful");
+                    logMessage("Access token & Refresh token generated.");
+                    console.log(responce)
+                    
+                    sessionStorage.setItem("accessToken",JSON.stringify(responce.accessToken));
+                    sessionStorage.setItem("refreshToken",JSON.stringify(responce.refreshToken));
+
+                }, error: function (xhr, staus, error) {
+                    logMessage("Failed to login");
+                }
+            });
+        }
+        
+        function logMessage(msg){
+            $('#mt').append(`<tr><td>${msg}</td></tr>`)
+        }
+        
+        function init(){
+            
+            $("#loginForm").submit(function () {
+                return false;
+            })
+
+            $("#loginForm").validate({
+                rules: {
+                    email: {
+                        required: true,
+                    },
+                    password: {
+                        required: true,
+                        minlength: 6
+                    }
+                },
+                messages: {
+                    email: {
+                        required: "Email is required field."
+                    },
+                    password: {
+                        required: "Password is required field.",
+                        minlength: "Minimun password length should be 6"
+                    }
+                },
+                errorPlacement: function (error, element) {
+                    error.addClass("text-danger small");
+                    error.insertAfter(element.closest("input"));
+
+                },
+                submitHandler: function (form) {
+                    login();
+                }
+            })
+        }
 
 </script>

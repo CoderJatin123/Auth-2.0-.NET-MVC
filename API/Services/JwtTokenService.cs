@@ -32,6 +32,7 @@ public class JwtTokenService
             DateTime.UtcNow.AddMinutes(int.Parse(_configuration["Jwt:AccessTokenExpiryMinutes"])),
             signingCredentials: signIn
         );
+        
         var refreshToken = Convert.ToBase64String(RandomNumberGenerator.GetBytes(32));
         DateTime refreshExpiry =
             DateTime.UtcNow.AddMinutes(int.Parse(_configuration["Jwt:RefreshTokenExpiryMinutes"]));
